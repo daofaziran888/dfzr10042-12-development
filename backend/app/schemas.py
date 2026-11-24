@@ -19,6 +19,7 @@ class ActionResult(BaseModel):
     ok: bool
     message: str
     entry: dict[str, Any] | None = None
+    data: dict[str, Any] | None = None
 
 
 class EntryPayload(BaseModel):
@@ -29,3 +30,12 @@ class EntryPayload(BaseModel):
 class ActionPayload(BaseModel):
     action: str
     remark: str | None = None
+
+
+class ReportImportPayload(BaseModel):
+    csv_text: str = ""
+    file_name: str = ""
+
+
+class ReportScopePayload(BaseModel):
+    scope: str

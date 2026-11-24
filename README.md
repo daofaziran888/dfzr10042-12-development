@@ -73,6 +73,31 @@ npm run dev
 | 数据集关联 | `dataset_join` | 关联方案 | 方案编号、主数据集、关联数据集 |
 | 报告生成 | `report_builder` | 报告模板 | 模板编号、报告名称、引用指标 |
 
+## 报告模板批量导入
+
+`report_builder` 工作台顶部提供 CSV 批量导入入口，后端对应的接口与领域逻辑在
+`app/routers/report_imports.py` 和 `app/services/report_builder.py`。
+
+- `GET  /api/report_builder/sample-csv`：下载带同名指标、未知旧别名和合法编号的示例 CSV。
+- `POST /api/report_builder/imports`：上传模板 CSV（JSON `{"csv_text": "..."}` 或直接 `text/csv`）。
+- `GET  /api/report_builder/imports[/{import_id}]`：查看导入结果与待核明细。
+- `POST /api/report_builder/imports/{import_id}/confirm`：`{"scope": "partial" | "whole"}` 确认启用范围。
+- `GET  /api/report_builder/computable-templates`：可计算模板清单（按指标编号列出可算指标）。
+- `GET  /api/report_builder/report?template_id=...`：当前正式使用的报告数据。
+
+CSV 列：`模板编号,报告名称,区块,指标编号,指标名称,源行编号,金额`（支持中英文表头别名）。
+
+处理规则：
+
+- 指标身份 = **指标编号 + 口径版本 + 口径指纹**，名称只用于展示，不同编号允许同名。
+- 按区块整体核验：区块内每个指标编号都要能在指标定义里找到可计算口径，且源行编号
+  必须落在该编号的查询范围内、金额与查询结果一致；缺编号、未知编号、旧别名一律待核。
+- 只有已核验区块的指标才进入报告，待核指标绝不入报；每条报告指标都能回查稳定身份、
+  源行和计算范围。
+- 同一份文件按内容指纹去重；确认动作加锁，并发提交同一次导入只落一个模板版本。
+- 部分启用只需至少一个已核验区块；存在待核区块时整份启用会被拒绝并给出冲突说明。
+  重新上传补齐证据后，才会生成并正式使用新的模板版本。
+
 ## 约定
 
 - 全部模块共享`frontend/src/views/WorkbenchView.vue|tsx`和一套资源路由。
